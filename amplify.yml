@@ -23,5 +23,7 @@ frontend:
     paths:
       - ".npm/**/*"
       - "node_modules/**/*"
-
-
+postBuild:
+  commands:
+    - echo "--- dist contents ---"
+    - ls -la dist
