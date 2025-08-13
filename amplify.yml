@@ -3,31 +3,25 @@ frontend:
   phases:
     preBuild:
       commands:
-        # Node を 20 に固定
         - nvm install 20
         - nvm use 20
         - node -v
         - npm -v
-        # 依存インストール（キャッシュ活用）
         - npm ci --cache .npm --prefer-offline
-        # VITE_ 環境変数のキー名だけ確認（値は表示しない）
-        - echo "== VITE_* environment keys =="
-        - /bin/bash -lc 'env | grep "^VITE_" | cut -d"=" -f1 || true'
     build:
       commands:
         - npm run build
     postBuild:
       commands:
-        - echo "== dist contents =="
         - ls -la dist || true
-        - echo "ok" > dist/health.txt
+        - echo ok > dist/health.txt
   artifacts:
     baseDirectory: dist
     files:
-      - '**/*'
+      - "**/*"
   cache:
     paths:
-      - .npm/**/*
-      - node_modules/**/*
+      - ".npm/**/*"
+      - "node_modules/**/*"
 
 
