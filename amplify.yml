@@ -27,3 +27,7 @@ postBuild:
   commands:
     - echo "--- dist contents ---"
     - ls -la dist
+preBuild:
+  commands:
+    - echo "=== ENV VARS ==="
+    - printenv | sort
