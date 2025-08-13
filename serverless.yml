@@ -1,0 +1,370 @@
+service: letsgettrippin
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: ap-southeast-2
+  stage: ${opt:stage, 'dev'}
+  memorySize: 1024
+  timeout: 900
+  architecture: x86_64
+  
+  # IAM役割設定
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: 
+            - arn:aws:logs:ap-southeast-2:110880666433:*
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+          Resource: 
+            - arn:aws:s3:::${self:service}-static-assets-*/*
+
+  # 環境変数
+  environment:
+    GA_ID: G-Q65SK1WHYP
+    AMADEUS_API_SECRET: ${ssm:/letsgettrippin/amadeus-api-secret}
+    STRIPE_SECRET_KEY: ${ssm:/letsgettrippin/stripe-secret-key}
+    GOOGLE_TRANSLATE_API_KEY: ${ssm:/letsgettrippin/google-translate-api-key}
+    VITE_GA_ID: G-Q65SK1WHYP
+    ESIM_TOKEN: ${ssm:/letsgettrippin/esim-token}
+    OPENAI_API_KEY: ${ssm:/letsgettrippin/openai-api-key}
+    AMADEUS_API_KEY: ${ssm:/letsgettrippin/amadeus-api-key}
+    VITE_STRIPE_PUBLISHABLE_KEY: pk_test_51RZ6JJ04z3oMa6p2jezeePg39hs0ByNMw3oNOac7MsqPcOhrkNdSsZufMGFcSPE0h9Y300FxWmajcTxqCHmkCKBU00ES1RmeMw
+    VITE_AMADEUS_API_KEY: ${ssm:/letsgettrippin/amadeus-api-key}
+    VITE_AUTH0_DOMAIN: dev-qwtb2dn1ancbggzf.us.auth0.com
+    TRIPADVISOR_API_KEY: ${ssm:/letsgettrippin/tripadvisor-api-key}
+    STRIPE_PUBLISHABLE_KEY: pk_test_51RZ6JJ04z3oMa6p2jezeePg39hs0ByNMw3oNOac7MsqPcOhrkNdSsZufMGFcSPE0h9Y300FxWmajcTxqCHmkCKBU00ES1RmeMw
+    GOOGLE_MAPS_API_KEY: ${ssm:/letsgettrippin/google-maps-api-key}
+    AUTH0_CLIENT_ID: YAEyjPwIawh7M7uO0h5E4ImICmbjzOUe
+    AUTH0_DOMAIN: dev-qwtb2dn1ancbggzf.us.auth0.com
+    VITE_TRIPADVISOR_API_KEY: ${ssm:/letsgettrippin/tripadvisor-api-key}
+    VITE_AUTH0_CLIENT_ID: YAEyjPwIawh7M7uO0h5E4ImICmbjzOUe
+    VITE_GOOGLE_MAPS_API_KEY: ${ssm:/letsgettrippin/google-maps-api-key}
+    ESIM_BASE: https://tubular-pie-835f20.netlify.app/
+    VITE_GOOGLE_TRANSLATE_API_KEY: ${ssm:/letsgettrippin/google-translate-api-key}
+    NODE_ENV: production
+    STAGE: ${self:provider.stage}
+
+  # API Gateway設定
+  apiGateway:
+    restApiId: ${self:custom.apiGatewayRestApiId.${self:provider.stage}, ''}
+    restApiRootResourceId: ${self:custom.apiGatewayRestApiRootResourceId.${self:provider.stage}, ''}
+    binaryMediaTypes:
+      - '*/*'
+
+# カスタム設定（統合版）
+custom:
+  # 既存のAPI Gatewayを使用する場合（オプション）
+  apiGatewayRestApiId:
+    dev: ''
+    prod: cmlc2yk69j  # 既存のAPI Gateway ID
+  apiGatewayRestApiRootResourceId:
+    dev: ''
+    prod: ''  # 必要に応じて設定
+  
+  # S3バケット名
+  staticBucketName: ${self:service}-static-assets-${self:provider.stage}-${aws:accountId}
+  
+  # CloudFront設定
+  cloudfrontDomainName: ${self:service}-${self:provider.stage}.example.com
+  
+  # S3同期設定（プラグイン用）
+  s3Sync:
+    - bucketName: ${self:custom.staticBucketName}
+      localDir: dist
+      deleteRemoved: true
+      acl: public-read
+      followSymlinks: true
+      defaultContentType: text/html
+      params:
+        - match: "*.js"
+          cacheControl: "max-age=31536000"
+        - match: "*.css"
+          cacheControl: "max-age=31536000"
+        - match: "*.png"
+          cacheControl: "max-age=31536000"
+        - match: "*.jpg"
+          cacheControl: "max-age=31536000"
+
+# 関数定義
+functions:
+  trippin:
+    handler: index.handler
+    name: trippin
+    description: "Japan travel companion main API function"
+    reservedConcurrency: 50
+    ephemeralStorageSize: 512
+    
+    # タグ
+    tags:
+      TravelAPI: amadeus+tripadvisor
+      Timeout: 900s
+      MemorySize: 1024mb
+      Backup: none
+      CostCenter: travel-ai-ops
+      ConnectivityAPI: esim
+      ExternalAPIs: '8'
+      AutoShutdown: disabled
+      ExecutionTime: long
+      FreeAPIs: '1'
+      PaidAPIs: '7'
+      Analytics: google-analytics
+      Monitoring: enhanced
+      TranslationAPI: openai+googletranslate
+      ColdStartOptimized: 'true'
+      APIProvider: openai+amadeus+tripadvisor+stripe+esim+googlemaps+googletranslate
+      MapProvider: googlemaps
+      FunctionType: main-api
+      Environment: prod
+      Owner: hk493
+      Integration: multi-api-gateway
+      Service: letsgettrippin
+      Role: central-hub
+      PaymentProvider: stripe
+      CriticalAPIs: openai+stripe+amadeus
+      Runtime: nodejs22
+      Project: japan-travel-companion
+      AuthProvider: auth0
+      ConcurrencyReserved: '50'
+      Features: translation+itinerary+guide+esim+payment+maps+auth
+      Component: lambda
+      HasFunctionURL: 'true'
+    
+    # イベント設定（API Gateway）
+    events:
+      # ルートパス
+      - http:
+          path: /
+          method: ANY
+          cors: true
+      # 全てのパスをキャッチ
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+      # 特定のAPIエンドポイント
+      - http:
+          path: /trippin
+          method: ANY
+          cors: true
+      - http:
+          path: /trippin/{proxy+}
+          method: ANY
+          cors: true
+      # API endpoints
+      - http:
+          path: /api/health
+          method: GET
+          cors: true
+      - http:
+          path: /api/{proxy+}
+          method: ANY
+          cors: true
+
+# プラグイン
+plugins:
+  - serverless-offline
+  - serverless-s3-sync
+
+# リソース定義
+resources:
+  Resources:
+    # S3バケット（静的アセット用）
+    StaticAssetsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.staticBucketName}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders: ['*']
+              AllowedMethods: [GET, HEAD]
+              AllowedOrigins: ['*']
+              MaxAge: 3000
+
+    # S3バケットポリシー
+    StaticAssetsBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref StaticAssetsBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: '*'
+              Action: s3:GetObject
+              Resource: !Sub '${StaticAssetsBucket}/*'
+
+    # CloudFrontオリジンアクセスアイデンティティ
+    CloudFrontOriginAccessIdentity:
+      Type: AWS::CloudFront::OriginAccessIdentity
+      Properties:
+        OriginAccessIdentityConfig:
+          Comment: OAI for ${self:service}-${self:provider.stage}
+
+    # CloudFront配信
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Comment: ${self:service}-${self:provider.stage} distribution
+          DefaultRootObject: index.html
+          Origins:
+            # API Gateway origin
+            - Id: ApiGatewayOrigin
+              DomainName:
+                Fn::Join:
+                  - ''
+                  - - Ref: ApiGatewayRestApi
+                    - '.execute-api.'
+                    - ${self:provider.region}
+                    - '.amazonaws.com'
+              CustomOriginConfig:
+                HTTPPort: 443
+                OriginProtocolPolicy: https-only
+              OriginPath: /${self:provider.stage}
+            # S3 static assets origin
+            - Id: S3Origin
+              DomainName: !GetAtt StaticAssetsBucket.DomainName
+              S3OriginConfig:
+                OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+          
+          DefaultCacheBehavior:
+            TargetOriginId: ApiGatewayOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT]
+            CachedMethods: [GET, HEAD, OPTIONS]
+            Compress: true
+            ForwardedValues:
+              QueryString: true
+              Headers: 
+                - Accept
+                - Authorization
+                - CloudFront-Forwarded-Proto
+                - Host
+                - User-Agent
+              Cookies:
+                Forward: all
+            MinTTL: 0
+            DefaultTTL: 0
+            MaxTTL: 31536000
+
+          CacheBehaviors:
+            # Static assets caching
+            - PathPattern: '/static/*'
+              TargetOriginId: S3Origin
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods: [GET, HEAD, OPTIONS]
+              CachedMethods: [GET, HEAD, OPTIONS]
+              Compress: true
+              ForwardedValues:
+                QueryString: false
+                Headers: []
+              MinTTL: 0
+              DefaultTTL: 86400
+              MaxTTL: 31536000
+            - PathPattern: '/assets/*'
+              TargetOriginId: S3Origin
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods: [GET, HEAD, OPTIONS]
+              CachedMethods: [GET, HEAD, OPTIONS]
+              Compress: true
+              ForwardedValues:
+                QueryString: false
+                Headers: []
+              MinTTL: 0
+              DefaultTTL: 86400
+              MaxTTL: 31536000
+            # SPA fallback for client-side routing
+            - PathPattern: '/app/*'
+              TargetOriginId: S3Origin
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods: [GET, HEAD, OPTIONS]
+              CachedMethods: [GET, HEAD, OPTIONS]
+              Compress: true
+              ForwardedValues:
+                QueryString: false
+                Headers: []
+              MinTTL: 0
+              DefaultTTL: 0
+              MaxTTL: 31536000
+
+          CustomErrorResponses:
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+              ErrorCachingMinTTL: 300
+            - ErrorCode: 403
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+              ErrorCachingMinTTL: 300
+
+    # Lambda function URLリソース
+    TrippinFunctionUrl:
+      Type: AWS::Lambda::Url
+      Properties:
+        AuthType: NONE
+        InvokeMode: BUFFERED
+        TargetFunctionArn: !GetAtt TrippinLambdaFunction.Arn
+
+  # 出力値
+  Outputs:
+    ApiGatewayRestApiId:
+      Value: !Ref ApiGatewayRestApi
+      Export:
+        Name: ${self:service}-${self:provider.stage}-ApiGatewayRestApiId
+
+    ApiGatewayRootResourceId:
+      Value: !GetAtt ApiGatewayRestApi.RootResourceId
+      Export:
+        Name: ${self:service}-${self:provider.stage}-ApiGatewayRootResourceId
+
+    ApiUrl:
+      Description: 'API Gateway URL'
+      Value:
+        Fn::Join:
+          - ''
+          - - 'https://'
+            - Ref: ApiGatewayRestApi
+            - '.execute-api.'
+            - ${self:provider.region}
+            - '.amazonaws.com/'
+            - ${self:provider.stage}
+      Export:
+        Name: ${self:service}-${self:provider.stage}-ApiUrl
+
+    CloudFrontUrl:
+      Description: 'CloudFront Distribution URL'
+      Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
+      Export:
+        Name: ${self:service}-${self:provider.stage}-CloudFrontUrl
+
+    S3BucketName:
+      Description: 'S3 Bucket for static assets'
+      Value: !Ref StaticAssetsBucket
+      Export:
+        Name: ${self:service}-${self:provider.stage}-StaticBucket
+
+    FunctionUrl:
+      Description: 'Lambda Function URL'
+      Value: !GetAtt TrippinFunctionUrl.FunctionUrl
+      Export:
+        Name: ${self:service}-${self:provider.stage}-FunctionUrl
