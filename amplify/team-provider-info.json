@@ -1,0 +1,27 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-goonmain-dev-90395-authRole",
+      "UnauthRoleArn": "arn:aws:iam::110880666433:role/amplify-goonmain-dev-90395-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::110880666433:role/amplify-goonmain-dev-90395-authRole",
+      "Region": "ap-southeast-2",
+      "DeploymentBucketName": "amplify-goonmain-dev-90395-deployment",
+      "UnauthRoleName": "amplify-goonmain-dev-90395-unauthRole",
+      "StackName": "amplify-goonmain-dev-90395",
+      "StackId": "arn:aws:cloudformation:ap-southeast-2:110880666433:stack/amplify-goonmain-dev-90395/9e4e9050-790d-11f0-b7f7-0af5d59332c5",
+      "AmplifyAppId": "d2t9wm78esx526"
+    },
+    "categories": {
+      "function": {
+        "goonmain48760e03": {
+          "deploymentBucketName": "amplify-goonmain-dev-90395-deployment",
+          "s3Key": "amplify-builds/goonmain48760e03-684d4169755244624432-build.zip"
+        },
+        "trippin": {
+          "deploymentBucketName": "amplify-goonmain-dev-90395-deployment",
+          "s3Key": "amplify-builds/trippin-3930674e6a47646e7450-build.zip"
+        }
+      }
+    }
+  }
+}

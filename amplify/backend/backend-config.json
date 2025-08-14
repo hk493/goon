@@ -1,0 +1,49 @@
+{
+  "function": {
+    "goonmain48760e03": {
+      "build": true,
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "trippin": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_goonmain48760e03_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "goonmain48760e03"
+        }
+      ]
+    },
+    "AMPLIFY_function_goonmain48760e03_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "goonmain48760e03"
+        }
+      ]
+    },
+    "AMPLIFY_function_trippin_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "trippin"
+        }
+      ]
+    },
+    "AMPLIFY_function_trippin_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "trippin"
+        }
+      ]
+    }
+  }
+}

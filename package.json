@@ -12,6 +12,10 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.3.0",
+    "@aws-amplify/api": "^6.3.17",
+    "@aws-amplify/auth": "^6.15.0",
+    "@aws-amplify/core": "^6.13.1",
+    "@aws-amplify/plugin-types": "^1.11.0",
     "@stripe/stripe-js": "^7.5.0",
     "@types/react-beautiful-dnd": "^13.1.8",
     "aws-amplify": "^6.15.5",
